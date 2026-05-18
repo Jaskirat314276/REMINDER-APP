@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Medicine Reminder · SMS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f5f1ea;
+    --bg-card: #fffdf8;
+    --ink: #1d1f1c;
+    --ink-soft: #5c5f5a;
+    --line: #d9d3c5;
+    --accent: #2e7d6b;
+    --accent-soft: #e3efe9;
+    --danger: #b04545;
+    --warn: #c98a3b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--ink); font-family: 'Inter', sans-serif; min-height: 100vh; }
+  body {
+    background-image:
+      radial-gradient(circle at 12% 8%, rgba(46,125,107,0.07), transparent 40%),
+      radial-gradient(circle at 88% 92%, rgba(201,138,59,0.08), transparent 45%);
+    padding: 48px 24px;
+  }
+  .container { max-width: 720px; margin: 0 auto; }
+
+  header {
+    margin-bottom: 40px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 24px;
+  }
+  .header-left { display: flex; flex-direction: column; gap: 8px; }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 38px;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--accent);
+    font-weight: 400;
+  }
+  .tagline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--ink-soft);
+  }
+
+  /* Live clock (top-right) */
+  .live-clock {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+  }
+  .clock-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 2px;
+  }
+  .clock-time .sec {
+    font-size: 16px;
+    color: var(--accent);
+    margin-left: 4px;
+  }
+  .clock-time .colon {
+    animation: blink 1s steps(2, start) infinite;
+  }
+  @keyframes blink { to { opacity: 0.25; } }
+  .clock-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 4px;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 32px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02), 0 8px 24px -16px rgba(0,0,0,0.1);
+  }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-label::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+  }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+  label .hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--ink-soft);
+    margin-left: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  input[type="tel"], input[type="text"], textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: #fff;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  textarea { resize: vertical; min-height: 90px; }
+
+  .field { margin-bottom: 20px; }
+
+  /* Time stepper picker */
+  .times-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .time-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .time-stepper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 10px 14px;
+    user-select: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .time-stepper:hover { border-color: var(--accent); }
+  .time-stepper.active { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  .ts-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 56px;
+    padding: 2px 0;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+  .ts-col:hover { background: var(--accent-soft); }
+
+  .ts-btn {
+    background: transparent;
+    border: none;
+    color: var(--ink-soft);
+    font-size: 11px;
+    line-height: 1;
+    padding: 4px 12px;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: color 0.1s, background 0.1s;
+  }
+  .ts-btn:hover { color: var(--accent); background: rgba(46,125,107,0.08); }
+  .ts-btn:active { transform: scale(0.92); }
+
+  .ts-display {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    min-width: 50px;
+    text-align: center;
+    transition: color 0.15s;
+  }
+  .ts-display.bump { animation: bump 0.18s ease; }
+  @keyframes bump {
+    50% { transform: translateY(-3px); color: var(--accent); }
+    100% { transform: translateY(0); }
+  }
+
+  .ts-sep {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    color: var(--ink-soft);
+    margin: 0 2px;
+    padding-bottom: 2px;
+  }
+
+  .ts-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+
+  .ts-presets {
+    display: flex;
+    gap: 4px;
+    margin-left: 8px;
+    flex-wrap: wrap;
+  }
+  .ts-preset {
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px 9px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+  .ts-preset:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+  .remove-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    width: 38px; height: 38px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .remove-btn:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  .add-time-btn {
+    background: transparent;
+    border: 1px dashed var(--line);
+    color: var(--accent);
+    padding: 10px;
+    width: 100%;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .add-time-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .submit-btn {
+    background: var(--ink);
+    color: var(--bg);
+    border: none;
+    padding: 14px 24px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    border-radius: 3px;
+    width: 100%;
+    margin-top: 8px;
+    transition: background 0.15s;
+  }
+  .submit-btn:hover { background: var(--accent); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .toast {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 3px;
+    font-size: 13px;
+    display: none;
+  }
+  .toast.show { display: block; }
+  .toast.success { background: var(--accent-soft); color: var(--accent); }
+  .toast.error { background: #f5e3e3; color: var(--danger); }
+
+  .reminder-item {
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 18px 20px;
+    margin-bottom: 12px;
+    background: var(--bg-card);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .reminder-phone {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .reminder-message {
+    font-family: 'Fraunces', serif;
+    font-size: 17px;
+    line-height: 1.4;
+    margin-bottom: 10px;
+    color: var(--ink);
+  }
+  .reminder-times {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .time-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    padding: 3px 8px;
+    border-radius: 2px;
+    letter-spacing: 0.05em;
+  }
+  .delete-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+    padding: 6px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .delete-btn:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+
+  .empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ink-soft);
+    font-style: italic;
+    font-family: 'Fraunces', serif;
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 32px;
+    color: var(--ink-soft);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 520px) {
+    h1 { font-size: 28px; }
+    .clock-time { font-size: 20px; }
+    .ts-display { font-size: 26px; min-width: 42px; }
+    .ts-col { min-width: 48px; }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-left">
+        <h1>MEDICINE <em>REMINDERS</em></h1>
+        <div class="tagline">SMS · ON SCHEDULE</div>
+      </div>
+      <div class="live-clock" aria-label="current time">
+        <div class="clock-time">
+          <span id="clk-h">--</span><span class="colon">:</span><span id="clk-m">--</span><span class="sec" id="clk-s">--</span>
+        </div>
+        <div class="clock-date" id="clk-date">—</div>
+      </div>
+    </header>
+
+    <!-- Form -->
+    <div class="card">
+      <div class="section-label">New Reminder</div>
+
+      <div class="field">
+        <label for="phone">Phone number <span class="hint">E.164 format · e.g. +919876543210</span></label>
+        <input type="tel" id="phone" placeholder="+919876543210" />
+      </div>
+
+      <div class="field">
+        <label for="message">Message</label>
+        <textarea id="message" placeholder="Take your blood pressure medication with water."></textarea>
+      </div>
+
+      <div class="field">
+        <label>Times <span class="hint">click ▲▼ · scroll · or use presets</span></label>
+        <div class="times-list" id="times-list"></div>
+        <button class="add-time-btn" type="button" onclick="addTime()">+ Add another time</button>
+      </div>
+
+      <button class="submit-btn" id="submit-btn" onclick="submitReminder()">Schedule reminder</button>
+      <div class="toast" id="toast"></div>
+    </div>
+
+    <!-- List -->
+    <div class="card">
+      <div class="section-label">Active reminders</div>
+      <div id="reminders-list"></div>
+    </div>
+
+    <footer>simple · local · honest</footer>
+  </div>
+
+<script>
+  // ---------- Live clock ----------
+  function tickClock() {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    document.getElementById('clk-h').textContent = pad(now.getHours());
+    document.getElementById('clk-m').textContent = pad(now.getMinutes());
+    document.getElementById('clk-s').textContent = pad(now.getSeconds());
+    const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+    const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    document.getElementById('clk-date').textContent =
+      `${days[now.getDay()]} · ${pad(now.getDate())} ${months[now.getMonth()]} ${now.getFullYear()}`;
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  // ---------- Time stepper picker ----------
+  const PRESETS = [
+    ['MORN', '08:00'],
+    ['NOON', '12:00'],
+    ['EVE',  '18:00'],
+    ['NITE', '21:00'],
+  ];
+
+  function createTimeRow(initial = '08:00') {
+    const [h, m] = initial.split(':');
+    const row = document.createElement('div');
+    row.className = 'time-row';
+    row.innerHTML = `
+      <div class="time-stepper" tabindex="0">
+        <div class="ts-col" data-part="hour">
+          <button type="button" class="ts-btn" data-dir="1">▲</button>
+          <div class="ts-display">${h}</div>
+          <button type="button" class="ts-btn" data-dir="-1">▼</button>
+          <div class="ts-meta">HOUR</div>
+        </div>
+        <div class="ts-sep">:</div>
+        <div class="ts-col" data-part="minute">
+          <button type="button" class="ts-btn" data-dir="1">▲</button>
+          <div class="ts-display">${m}</div>
+          <button type="button" class="ts-btn" data-dir="-1">▼</button>
+          <div class="ts-meta">MIN</div>
+        </div>
+        <div class="ts-presets">
+          ${PRESETS.map(([label, val]) =>
+            `<button type="button" class="ts-preset" data-preset="${val}">${label}</button>`
+          ).join('')}
+        </div>
+      </div>
+      <button type="button" class="remove-btn" title="Remove">×</button>
+    `;
+    setupStepperEvents(row);
+    return row;
+  }
+
+  function setupStepperEvents(row) {
+    const stepper = row.querySelector('.time-stepper');
+
+    const adjust = (part, dir) => {
+      const col = stepper.querySelector(`.ts-col[data-part="${part}"]`);
+      const display = col.querySelector('.ts-display');
+      const max = part === 'hour' ? 24 : 60;
+      let v = (parseInt(display.textContent, 10) + dir + max) % max;
+      display.textContent = String(v).padStart(2, '0');
+      display.classList.remove('bump');
+      void display.offsetWidth;
+      display.classList.add('bump');
+    };
+
+    stepper.querySelectorAll('.ts-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const part = btn.closest('.ts-col').dataset.part;
+        const dir = parseInt(btn.dataset.dir, 10);
+        adjust(part, dir);
+      });
+    });
+
+    // Scroll wheel on each column
+    stepper.querySelectorAll('.ts-col').forEach((col) => {
+      col.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const part = col.dataset.part;
+        const dir = e.deltaY < 0 ? 1 : -1;
+        adjust(part, dir);
+      }, { passive: false });
+    });
+
+    // Presets
+    stepper.querySelectorAll('.ts-preset').forEach((p) => {
+      p.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const [hh, mm] = p.dataset.preset.split(':');
+        stepper.querySelector('.ts-col[data-part="hour"] .ts-display').textContent = hh;
+        stepper.querySelector('.ts-col[data-part="minute"] .ts-display').textContent = mm;
+        stepper.querySelectorAll('.ts-display').forEach(d => {
+          d.classList.remove('bump');
+          void d.offsetWidth;
+          d.classList.add('bump');
+        });
+      });
+    });
+
+    // Keyboard arrows when stepper is focused
+    stepper.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp')    { adjust('hour',   1); e.preventDefault(); }
+      if (e.key === 'ArrowDown')  { adjust('hour',  -1); e.preventDefault(); }
+      if (e.key === 'ArrowRight') { adjust('minute', 1); e.preventDefault(); }
+      if (e.key === 'ArrowLeft')  { adjust('minute',-1); e.preventDefault(); }
+    });
+    stepper.addEventListener('focus',  () => stepper.classList.add('active'));
+    stepper.addEventListener('blur',   () => stepper.classList.remove('active'));
+
+    // Remove button
+    row.querySelector('.remove-btn').addEventListener('click', () => {
+      const list = document.getElementById('times-list');
+      if (list.children.length > 1) row.remove();
+    });
+  }
+
+  function addTime() {
+    document.getElementById('times-list').appendChild(createTimeRow('12:00'));
+  }
+
+  function readTimes() {
+    return Array.from(document.querySelectorAll('#times-list .time-row')).map(row => {
+      const h = row.querySelector('.ts-col[data-part="hour"]   .ts-display').textContent;
+      const m = row.querySelector('.ts-col[data-part="minute"] .ts-display').textContent;
+      return `${h}:${m}`;
+    });
+  }
+
+  // ---------- Form submit / API ----------
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = `toast show ${type}`;
+    setTimeout(() => { toast.className = 'toast'; }, 4000);
+  }
+
+  async function submitReminder() {
+    const phone = document.getElementById('phone').value.trim();
+    const message = document.getElementById('message').value.trim();
+    const times = readTimes();
+
+    if (!phone || !message || times.length === 0) {
+      return showToast('Please fill all fields and add at least one time.', 'error');
+    }
+
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Scheduling...';
+
+    try {
+      const res = await fetch('/api/reminders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, message, times })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      showToast('Reminder scheduled.');
+      document.getElementById('message').value = '';
+      loadReminders();
+    } catch (e) {
+      showToast(e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Schedule reminder';
+    }
+  }
+
+  async function deleteReminder(id) {
+    if (!confirm('Delete this reminder?')) return;
+    const res = await fetch('/api/reminders/' + id, { method: 'DELETE' });
+    if (res.ok) loadReminders();
+  }
+
+  async function loadReminders() {
+    const res = await fetch('/api/reminders');
+    const reminders = await res.json();
+    const list = document.getElementById('reminders-list');
+
+    if (reminders.length === 0) {
+      list.innerHTML = '<div class="empty">No reminders yet.</div>';
+      return;
+    }
+
+    list.innerHTML = reminders.map(r => `
+      <div class="reminder-item">
+        <div>
+          <div class="reminder-phone">${escapeHtml(r.phone)}</div>
+          <div class="reminder-message">${escapeHtml(r.message)}</div>
+          <div class="reminder-times">
+            ${r.times.map(t => `<span class="time-pill">${escapeHtml(t)}</span>`).join('')}
+          </div>
+        </div>
+        <button class="delete-btn" onclick="deleteReminder('${r.id}')">Delete</button>
+      </div>
+    `).join('');
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    })[c]);
+  }
+
+  // ---------- Init ----------
+  document.getElementById('times-list').appendChild(createTimeRow('08:00'));
+  loadReminders();
+</script>
+</body>
+</html>

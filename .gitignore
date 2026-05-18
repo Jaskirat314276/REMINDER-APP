@@ -1,0 +1,28 @@
+# --- Secrets & local config ---
+.env
+.env.*
+!.env.example
+
+# --- Data files (local user data) ---
+reminders.json
+
+# --- Node ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Private docs (NOT for GitHub) ---
+INTERVIEW_NOTES.md
+NOTES.md
+PRIVATE_*.md
+*.private.md
